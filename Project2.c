@@ -22,9 +22,9 @@
 #define LCD_RW LATBbits.LATB15
 #define LCD_E  LATBbits.LATB13
 #define LCD_D4 LATBbits.LATB12
-#define LCD_D5 LATAbits.LATA3
-#define LCD_D6 LATBbits.LATB4
-#define LCD_D7 LATAbits.LATA4
+#define LCD_D5 LATBbits.LATB0
+#define LCD_D6 LATBbits.LATB3
+#define LCD_D7 LATBbits.LATB6
 #define CHARS_PER_LINE 16
 
 #define WRITE_ENABLE     0x06  // Address:0 Dummy:0 Num:0 fMax: 25MHz
@@ -365,15 +365,17 @@ float live_frequency(void){
 // http://umassamherstm5.org/tech-tutorials/pic32-tutorials/pic32mx220-tutorials/1-basic-digital-io-220
 void main(void)
 {
-	long int count;
-	int  t_elapsed = 0;
-	float T, live_freq, f, freq_diff, ref_freq;
+    long int count;
+    int  t_elapsed = 0;
+    float T, live_freq, f, freq_diff, ref_freq;
 
-	CFGCON = 0;
-
+    CFGCON = 0;
 
     UART2Configure(115200);  // Configure UART2 for a baud rate of 115200
     
+    Init_LCD_Pins();			//Initialize LCD pins
+    LCD_4BIT();				//Set LCD as 4-bit mode
+
     ANSELB &= ~(1<<5); // Set RB5 as a digital I/O
     TRISB |= (1<<5);   // configure pin RB5 as input
     CNPUB |= (1<<5);   // Enable pull-up resistor for RB5
