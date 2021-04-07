@@ -18,14 +18,6 @@
 #define Baud2BRG(desired_baud)( (SYSCLK / (16*desired_baud))-1)
 #define WAIT_INTERVAL 5000
 #define TOLERANCE 10
-#define LCD_RS LATBbits.LATB2
-#define LCD_RW LATBbits.LATB15
-#define LCD_E  LATBbits.LATB13
-#define LCD_D4 LATBbits.LATB12
-#define LCD_D5 LATBbits.LATB0
-#define LCD_D6 LATBbits.LATB3
-#define LCD_D7 LATBbits.LATB6
-#define CHARS_PER_LINE 16
 
 #define WRITE_ENABLE     0x06  // Address:0 Dummy:0 Num:0 fMax: 25MHz
 #define WRITE_DISABLE    0x04  // Address:0 Dummy:0 Num:0 fMax: 25MHz
