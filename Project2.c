@@ -31,6 +31,47 @@
 #define ERASE_BLOCK      0xd8  // Address:3 Dummy:0 Num:0 fMax: 25MHz
 #define READ_DEVICE_ID   0x9f  // Address:0 Dummy:2 Num:1 to infinite fMax: 25MHz
 
+// Indices
+#define SMALL 0x0033f8
+#define LARGE 0x00789e
+#define FERROUS 0x00c038
+#define NON 0x00fe01
+#define OBJECT 0x013efd
+#define DETECTED 0x016ebc
+#define DETERMINING 0x0187ce
+#define REFERENCE 0x01d928
+#define FREQUENCY 0x021c6f
+#define IS 0x026cca
+#define DEVICE 0x02ab30
+#define READY 0x02f367
+#define TO 0x0329cf
+#define MEASURE 0x03580f
+#define MEASUREMENT 0x038fe6
+#define FAILED 0x03d39b
+#define TRYING 0x04159b
+#define AGAIN 0x0454e6
+
+// Lengths
+
+#define SMALL_LEN 0x0044a6
+#define LARGE_LEN 0x00479a
+#define FERROUS_LEN 0x003dc9
+#define NON_LEN 0x0040fc
+#define OBJECT_LEN 0x002fbf
+#define DETECTED_LEN 0x001912
+#define DETERMINING_LEN 0x00515a
+#define REFERENCE_LEN 0x004347
+#define FREQUENCY_LEN 0x00505b
+#define IS_LEN 0x003e66
+#define DEVICE_LEN 0x004837
+#define READY_LEN 0x003668
+#define TO_LEN 0x002e40
+#define MEASURE_LEN 0x0037d7
+#define MEASUREMENT_LEN 0x0043b5
+#define FAILED_LEN 0x004200
+#define TRYING_LEN 0x003f4b
+#define AGAIN_LEN 0x003f82
+
 volatile unsigned long int playcnt=0;
 volatile unsigned char play_flag=0;
 
@@ -393,6 +434,7 @@ void main(void)
 				Start_Playback(FERROUS, FERROUS_LEN);
 				Start_Playback(OBJECT, OBJECT_LEN);
 				Start_Playback(DETECTED, DETECTED_LEN);
+
 				
 			}
 			else{
