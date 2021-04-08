@@ -1,9 +1,12 @@
 #include <XC.h>
+#include <sys/attribs.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include "LCD.h"
- 
+#include "Project2.h"
+
 // Configuration Bits (somehow XC32 takes care of this)
 #pragma config FNOSC = FRCPLL       // Internal Fast RC oscillator (8 MHz) w/ PLL
 #pragma config FPLLIDIV = DIV_2     // Divide FRC before PLL (now 4 MHz)
@@ -18,6 +21,18 @@
 #define Baud2BRG(desired_baud)( (SYSCLK / (16*desired_baud))-1)
 #define WAIT_INTERVAL 5000
 #define TOLERANCE 10
+#define SMALL_OBJECT_TOLERANCE 400
+
+// Defines
+#define SYSCLK 40000000L
+#define DEF_FREQ 22050L
+#define Baud2BRG(desired_baud)( (SYSCLK / (16*desired_baud))-1)
+
+#define PWM_FREQ    200000L
+#define DUTY_CYCLE  50
+
+#define SET_CS LATBbits.LATB0=1
+#define CLR_CS LATBbits.LATB0=0
 
 #define WRITE_ENABLE     0x06  // Address:0 Dummy:0 Num:0 fMax: 25MHz
 #define WRITE_DISABLE    0x04  // Address:0 Dummy:0 Num:0 fMax: 25MHz
@@ -30,47 +45,6 @@
 #define ERASE_ALL        0xc7  // Address:0 Dummy:0 Num:0 fMax: 25MHz
 #define ERASE_BLOCK      0xd8  // Address:3 Dummy:0 Num:0 fMax: 25MHz
 #define READ_DEVICE_ID   0x9f  // Address:0 Dummy:2 Num:1 to infinite fMax: 25MHz
-
-// Indices
-#define SMALL 0x0033f8
-#define LARGE 0x00789e
-#define FERROUS 0x00c038
-#define NON 0x00fe01
-#define OBJECT 0x013efd
-#define DETECTED 0x016ebc
-#define DETERMINING 0x0187ce
-#define REFERENCE 0x01d928
-#define FREQUENCY 0x021c6f
-#define IS 0x026cca
-#define DEVICE 0x02ab30
-#define READY 0x02f367
-#define TO 0x0329cf
-#define MEASURE 0x03580f
-#define MEASUREMENT 0x038fe6
-#define FAILED 0x03d39b
-#define TRYING 0x04159b
-#define AGAIN 0x0454e6
-
-// Lengths
-
-#define SMALL_LEN 0x0044a6
-#define LARGE_LEN 0x00479a
-#define FERROUS_LEN 0x003dc9
-#define NON_LEN 0x0040fc
-#define OBJECT_LEN 0x002fbf
-#define DETECTED_LEN 0x001912
-#define DETERMINING_LEN 0x00515a
-#define REFERENCE_LEN 0x004347
-#define FREQUENCY_LEN 0x00505b
-#define IS_LEN 0x003e66
-#define DEVICE_LEN 0x004837
-#define READY_LEN 0x003668
-#define TO_LEN 0x002e40
-#define MEASURE_LEN 0x0037d7
-#define MEASUREMENT_LEN 0x0043b5
-#define FAILED_LEN 0x004200
-#define TRYING_LEN 0x003f4b
-#define AGAIN_LEN 0x003f82
 
 volatile unsigned long int playcnt=0;
 volatile unsigned char play_flag=0;
@@ -310,6 +284,7 @@ void wait_1ms(void)
 // }
 
 #define PIN_PERIOD (PORTB&(1<<5))
+#define MEASURE_REF (PORTB&(1<<5))
 
 // GetPeriod() seems to work fine for frequencies between 200Hz and 700kHz.
 long int GetPeriod (int n)
@@ -365,29 +340,48 @@ float Get_Ref_Freq(void){
 			T = (count * 2.0) / (SYSCLK * 100.0);
 			new_freq = 1 / T;
 
-			freq_diff = abs(ref_freq);
+			freq_diff = abs(ref_freq-new_freq);
 			if(freq_diff < TOLERANCE){
 				print("Invalid reference frequency!: %f Hz \r", ref_freq);
-			}
-			else{
-				print("Reference frequency valid!: %f Hz\r", ref_freq);
-				waitms(1);
+				Start_Playback(FREQUENCY, FREQUENCY_LEN);
+				Start_Playback(MEASUREMENT, MEASUREMENT_LEN);
+				Start_Playback(FAILED, FAILED_LEN);
+				Start_Playback(DETECTED, DETECTED_LEN);
+				LCDprint("Measurement", 1, 1);
+				LCDprint("Failed", 2, 1);
+				waitms(1000);
+				Start_Playback(TRYING, TRYING_LEN);
+				Start_Playback(AGAIN, AGAIN_LEN);
+				return 0;
 			}
 		}
+		waitms(1);
 	}
+	print("Reference frequency valid!: %f Hz\r", ref_freq);
+	Start_Playback(DEVICE, DEVICE_LEN);
+	Start_Playback(IS, IS_LEN);
+	Start_Playback(READY, READY_LEN);
+	Start_Playback(TO, TO_LEN);
+	Start_Plaback(MEASURE, MEASURE_LEN);
+	LCDprint("Measurement", 1, 1);
+	LCDprint("Successful", 2, 1);
+
 	return ref_freq;
 }
 
 float live_frequency(void){
 	long int count;
 	int  t_elapsed = 0;
-	float live_freq;
+	float T, live_freq;
 
 		count = GetPeriod(100);
 		if (count>0){
 			T = (count * 2.0) / (SYSCLK * 100.0);
 			live_freq = 1.0 / T;
 		}
+	LCDprint("Frequency: (Hz)", 1, 1);
+	LCDprint("%5f", live_freq, 1);
+
 	return live_freq;
 }
 
@@ -402,6 +396,8 @@ void main(void)
     int  t_elapsed = 0;
     float T, live_freq, f, freq_diff, ref_freq;
 
+	ref_freq = 0;
+
     CFGCON = 0;
 
     UART2Configure(115200);  // Configure UART2 for a baud rate of 115200
@@ -412,15 +408,19 @@ void main(void)
     ANSELB &= ~(1<<5); // Set RB5 as a digital I/O
     TRISB |= (1<<5);   // configure pin RB5 as input
     CNPUB |= (1<<5);   // Enable pull-up resistor for RB5
- 
+
+	ANSELB &= ~(1<<4); // Set RB4 as a digital I/O
+    TRISB |= (1<<4);   // configure pin RB4 as input
+    CNPUB |= (1<<4);   // Enable pull-up resistor for RB4
+
 	waitms(500);
 	printf("Period measurement using the core timer free running counter.\r\n"
 	      "Connect signal to RB5 (pin 14).\r\n");
 	// bool isInit = false;
-	ref_freq = Get_Ref_Freq();
+	while(!ref_freq) ref_freq = Get_Ref_Freq();
 	
 	while (1){
-		if(/*button_press*/){
+		if(MEASURE_REF){
 			ref_freq = Get_Ref_Freq();
 		}
 		live_freq = live_frequency();
@@ -434,8 +434,9 @@ void main(void)
 				Start_Playback(FERROUS, FERROUS_LEN);
 				Start_Playback(OBJECT, OBJECT_LEN);
 				Start_Playback(DETECTED, DETECTED_LEN);
+				LCDprint("Small Ferrous", 1, 1);
+				LCDprint("Object Detected", 2, 1);
 
-				
 			}
 			else{
 				//increase in freq  -->means small non ferrous
@@ -444,6 +445,8 @@ void main(void)
 				Start_Playback(FERROUS, FERROUS_LEN);
 				Start_Playback(OBJECT, OBJECT_LEN);
 				Start_Playback(DETECTED, DETECTED_LEN);
+				LCDprint("Small N Ferrous", 1, 1);
+				LCDprint("Object Detected", 2, 1);
 			}
 			// determine sign of difference
 			//announce small object detected
@@ -455,6 +458,8 @@ void main(void)
 			Start_Playback(FERROUS, FERROUS_LEN);
 			Start_Playback(OBJECT, OBJECT_LEN);
 			Start_Playback(DETECTED, DETECTED_LEN);
+			LCDprint("Large Ferrous", 1, 1);
+			LCDprint("Object Detected", 2, 1);
 		}
 		else{
 			//announce large non ferrous object
@@ -463,6 +468,8 @@ void main(void)
 			Start_Playback(FERROUS, FERROUS_LEN);
 			Start_Playback(OBJECT, OBJECT_LEN);
 			Start_Playback(DETECTED, DETECTED_LEN);
+			LCDprint("Large N Ferrous", 1, 1);
+			LCDprint("Object Detected", 2, 1);
 		}
 
 		waitms(2000);

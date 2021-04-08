@@ -1,4 +1,9 @@
 #include "LCD.h"
+#include <XC.h>
+#include <sys/attribs.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 // Uses Timer4 to delay <us> microseconds
 void Init_LCD_Pins(void)
 {
@@ -103,7 +108,7 @@ void LCD_4BIT (void)
 	waitms(20); // Wait for clear screen command to finsih.
 }
 
-void LCDprint(char * string, unsigned char line, bool clear)
+void LCDprint(char * string, unsigned char line, int clear)
 {
 	int j;
 
@@ -112,6 +117,14 @@ void LCDprint(char * string, unsigned char line, bool clear)
 	for(j=0; string[j]!=0; j++)	WriteData(string[j]);// Write the message
 	if(clear) for(; j<CHARS_PER_LINE; j++) WriteData(' '); // Clear the rest of the line
 }
+
+/*void printStringLCD(const char* string, int line_num)
+{
+    char string_buff[17];
+    sprintf(string_buff, "%s", string);
+    LCDprint(string_buff, line_num, 1);
+}
+*/
 
 void printStringLCD(const char* string, int line_num)
 {
