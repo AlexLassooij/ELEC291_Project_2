@@ -47,7 +47,7 @@
 // Defines
 #define SYSCLK 40000000L
 #define Baud2BRG(desired_baud)( (SYSCLK / (16*desired_baud))-1)
-#define WAIT_INTERVAL 5000
+#define MEASURING_COUNT 50
 #define TOLERANCE 20
 #define SMALL_OBJECT_TOLERANCE 400
 #define DEF_FREQ 22050L

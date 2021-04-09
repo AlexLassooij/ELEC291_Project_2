@@ -383,7 +383,6 @@ void wait_1ms(void)
 // }
 
 #define PIN_PERIOD (PORTB&(1<<5))
-#define MEASURE_REF (PORTB&(1<<4))
 
 // GetPeriod() seems to work fine for frequencies between 200Hz and 700kHz.
 long int GetPeriod (int n)
@@ -421,8 +420,8 @@ long int GetPeriod (int n)
 
 float Get_Ref_Freq(void){
 	long int count;
-	int  t_elapsed = 0;
-	float T, new_freq, f, freq_diff, ref_freq;
+	int  measure_count = 0;
+	float T, new_freq, f, freq_diff, ref_freq, sum_freq;
 
 
 	count = GetPeriod(100);
@@ -430,8 +429,8 @@ float Get_Ref_Freq(void){
 		T = (count * 2.0) / (SYSCLK * 100.0);
 		ref_freq = 1.0 / T;
 	}
-	
-    while(t_elapsed<WAIT_INTERVAL)
+
+    while(measure_count<MEASURING_COUNT)
 	{
 		count = GetPeriod(100);
 		if (count > 0)
@@ -439,35 +438,28 @@ float Get_Ref_Freq(void){
 			T = (count * 2.0) / (SYSCLK * 100.0);
 			new_freq = 1 / T;
 
-			freq_diff = abs(ref_freq-new_freq);
-			//waitms(200);
-			if(freq_diff > TOLERANCE){
-				printf("Invalid reference frequency!: %f Hz \r\n", ref_freq);
-				/*Start_Playback(FREQUENCY, FREQUENCY_LEN);
-				Start_Playback(MEASUREMENT, MEASUREMENT_LEN);
-				Start_Playback(FAILED, FAILED_LEN);
-				Start_Playback(DETECTED, DETECTED_LEN);*/
-				LCDprint("Measurement", 1, 1);
-				LCDprint("Failed", 2, 1);
-				//waitms(1000);
-				/*Start_Playback(TRYING, TRYING_LEN);
-				Start_Playback(AGAIN, AGAIN_LEN);*/
-				return 2;
-			}
+			sum_freq += new_freq;
+            measure_count++;
+
 		}
-		waitms(1);
-		t_elapsed++;
+		waitms(100);
 
 	}
 	printf("Reference frequency valid!: %f Hz\r", ref_freq);
-	/*Start_Playback(DEVICE, DEVICE_LEN);
+	Start_Playback(DEVICE, DEVICE_LEN);
+	while(play_flag);
 	Start_Playback(IS, IS_LEN);
-	Start_Playback(READY, READY_LEN);
+    while(play_flag);
+    Start_Playback(READY, READY_LEN);
+    while(play_flag);
 	Start_Playback(TO, TO_LEN);
-	Start_Playback(MEASURE, MEASURE_LEN);*/
+    while(play_flag);
+	Start_Playback(MEASURE, MEASURE_LEN);
+    while(play_flag);
 	LCDprint("Measurement", 1, 1);
 	LCDprint("Successful", 2, 1);
 
+    ref_freq = sum_freq / measure_count;
 	return ref_freq;
 }
 
@@ -507,7 +499,7 @@ void main(void)
     Init_LCD_Pins();			//Initialize LCD pins
     LCD_4BIT();				//Set LCD as 4-bit mode
 	Init_pwm(); // pwm output used to implement DAC
-	SetupTimer1(); // The ISR for this timer playsback the sound
+	SetupTimer1(); // The ISR for this timer playback the sound
 	UART2Configure(115200);  // Configure UART2 for a baud rate of 115200
 	config_SPI(); // Configure hardware SPI module
 
@@ -527,76 +519,57 @@ void main(void)
 	//while(!ref_freq) 
 	/*Start_Playback(0x000000, 0x00FFFF);*/
 	//waitms(5000);
-	Start_Playback(OBJECT, OBJECT_LEN);
-	while (play_flag);
-	Start_Playback(DETERMINING, DETERMINING_LEN);
-	while (play_flag);
-	Start_Playback(DETECTED, DETECTED_LEN);
-	while (play_flag);
-	ref_freq = Get_Ref_Freq();
+//	Start_Playback(OBJECT, OBJECT_LEN);
+//	while (play_flag);
+//	Start_Playback(DETERMINING, DETERMINING_LEN);
+//	while (play_flag);
+//	Start_Playback(DETECTED, DETECTED_LEN);
+//	while (play_flag);
+//	ref_freq = Get_Ref_Freq();
 
 	while (1){
 			
-		//if(!MEASURE_REF){
-		//	ref_freq = live_frequency();
-		//	while(t_elapsed<WAIT_INTERVAL)
-		//	{
-		//		freq_diff = abs(ref_freq-new_freq);
-		//		//waitms(200);
-		//		if(freq_diff > TOLERANCE){
-		//			printf("Invalid reference frequency!: %f Hz \r", ref_freq);
-		//			/*Start_Playback(FREQUENCY, FREQUENCY_LEN);
-		//			Start_Playback(MEASUREMENT, MEASUREMENT_LEN);
-		//			Start_Playback(FAILED, FAILED_LEN);
-		//			Start_Playback(DETECTED, DETECTED_LEN);*/
-		//			LCDprint("Measurement", 1, 1);
-		//			LCDprint("Failed", 2, 1);
-		//			waitms(1000);
-		//			/*Start_Playback(TRYING, TRYING_LEN);
-		//			Start_Playback(AGAIN, AGAIN_LEN);*/
-		//		}
-		//		waitms(1);
-		//		t_elapsed++;
-
-		//	}
-		//	printf("Reference frequency valid!: %f Hz\r", ref_freq);
-		//	/*Start_Playback(DEVICE, DEVICE_LEN);
-		//	Start_Playback(IS, IS_LEN);
-		//	Start_Playback(READY, READY_LEN);
-		//	Start_Playback(TO, TO_LEN);
-		//	Start_Playback(MEASURE, MEASURE_LEN);*/
-		//	LCDprint("Measurement", 1, 1);
-		//	LCDprint("Successful", 2, 1);
-
-		//}
+		if(!MEASURE_REF) ref_freq = Get_Req_Freq();
 
 		live_freq = live_frequency();
 		freq_diff = live_freq-ref_freq;
 
-		if (live_freq == ref_freq || live_freq <= (ref_freq + TOLERANCE) || live_freq >= (ref_freq - TOLERANCE)) {
-			printf("Place a metal: Live = %f Ref = %f\r", live_freq, ref_freq);
-			LCDprint("Place a metal", 1, 1);
-			LCDprint("                            ", 2, 1);
-		
+		if ((live_freq <= (ref_freq + TOLERANCE)) && (live_freq >= (ref_freq - TOLERANCE))) {
+            printf("Place a metal: Live = %.0f Ref = %.0f\r", live_freq, ref_freq);
+            LCDprint("Place a metal", 1, 1);
+            LCDprint("                            ", 2, 1);
+        }
+		else
+        {
 			if (live_freq > ref_freq) {   //non-ferrous
 				if (freq_diff > SMALL_OBJECT_TOLERANCE) {
-					printf("Large Non Ferrous: Live = %f Ref = %f\r", live_freq, ref_freq);
+					printf("Large Non Ferrous: Live = %.0f Ref = %.0f\r", live_freq, ref_freq);
 					Start_Playback(LARGE, LARGE_LEN);
-					Start_Playback(NON, NON_LEN);
+                    while(play_flag);
+                    Start_Playback(NON, NON_LEN);
+                    while(play_flag);
 					Start_Playback(FERROUS, FERROUS_LEN);
+                    while(play_flag);
 					Start_Playback(OBJECT, OBJECT_LEN);
+                    while(play_flag);
 					Start_Playback(DETECTED, DETECTED_LEN);
+                    while(play_flag);
 					LCDprint("Large N Ferrous", 1, 1);
 					LCDprint("Object Detected", 2, 1);
 					
 				}
 				else {
-					printf("Small Non Ferrous: Live = %f Ref = %f\r", live_freq, ref_freq);
+					printf("Small Non Ferrous: Live = %.0f Ref = %.0f\r", live_freq, ref_freq);
 					Start_Playback(SMALL, SMALL_LEN);
+                    while(play_flag);
 					Start_Playback(NON, NON_LEN);
+                    while(play_flag);
 					Start_Playback(FERROUS, FERROUS_LEN);
+                    while(play_flag);
 					Start_Playback(OBJECT, OBJECT_LEN);
+                    while(play_flag);
 					Start_Playback(DETECTED, DETECTED_LEN);
+                    while(play_flag);
 					LCDprint("Small N Ferrous", 1, 1);
 					LCDprint("Object Detected", 2, 1);
 			
@@ -604,20 +577,28 @@ void main(void)
 			}
 			else if (live_freq < ref_freq) {//ferrous
 				if (-1.0 * freq_diff > SMALL_OBJECT_TOLERANCE) {
-					printf("Large Ferrous: Live = %f Ref = %f\r", live_freq, ref_freq);
+					printf("Large Ferrous: Live = %.0f Ref = %.0f\r", live_freq, ref_freq);
 					Start_Playback(LARGE, LARGE_LEN);
+                    while(play_flag);
 					Start_Playback(FERROUS, FERROUS_LEN);
+                    while(play_flag);
 					Start_Playback(OBJECT, OBJECT_LEN);
+                    while(play_flag);
 					Start_Playback(DETECTED, DETECTED_LEN);
+                    while(play_flag);
 					LCDprint("Large Ferrous", 1, 1);
 					LCDprint("Object Detected", 2, 1);
 				}
 				else {
-					printf("Small Ferrous: Live = %f Ref = %f\r", live_freq, ref_freq);
+					printf("Small Ferrous: Live = %.0f Ref = %.0f\r", live_freq, ref_freq);
 					Start_Playback(SMALL, SMALL_LEN);
+                    while(play_flag);
 					Start_Playback(FERROUS, FERROUS_LEN);
+                    while(play_flag);
 					Start_Playback(OBJECT, OBJECT_LEN);
+                    while(play_flag);
 					Start_Playback(DETECTED, DETECTED_LEN);
+                    while(play_flag);
 					LCDprint("Small Ferrous", 1, 1);
 					LCDprint("Object Detected", 2, 1);
 				}
