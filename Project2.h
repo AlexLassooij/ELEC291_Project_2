@@ -1,10 +1,4 @@
-//============================================================================================================
-//Display for LCD using PIC32
-//Code source : Dr. Jesus Calvino Fraga (gathered from ELEC291 Winter Term 2 2020-2021 Piazza posts
-//Date : April 7, 2021
-//===========================================================================================================
-
-#ifndef P__Project2_H
+/#ifndef P__Project2_H
 #define P__Project2_H
 /**************************************************************************************************************/
 //Pin configurations
@@ -15,11 +9,7 @@
 #define FERROUS 0x00789e
 #define NON 0x00c038
 #define OBJECT 0x00fe01
-<<<<<<< HEAD
 #define DETECTED 0x013efd
-=======
-#define DETECTED 0x016ebc
->>>>>>> e5eb91d0a1506cd72090af334aa749881bfebdae
 #define DETERMINING 0x0187ce
 #define REFERENCE 0x01d928
 #define FREQUENCY 0x021c6f
@@ -40,11 +30,7 @@
 #define FERROUS_LEN 0x00479a
 #define NON_LEN 0x003dc9
 #define OBJECT_LEN 0x0040fc
-<<<<<<< HEAD
 #define DETECTED_LEN 0x004912
-=======
-#define DETECTED_LEN 0x001912
->>>>>>> e5eb91d0a1506cd72090af334aa749881bfebdae
 #define DETERMINING_LEN 0x00515a
 #define REFERENCE_LEN 0x004347
 #define FREQUENCY_LEN 0x00505b
