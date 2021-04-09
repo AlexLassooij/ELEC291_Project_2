@@ -10,7 +10,7 @@ Project2.elf: $(OBJ)
 	$(OBJCPY) Project2.elf
 	@echo Success!
    
-Project2.o: Project2.c Project2.h LCD.h
+Project2.o: Project2.c Project2.h 
 	$(CC) -mips16 -g -x c -c $(ARCH) -MMD -o Project2.o Project2.c -DXPRJ_default=default -legacy-libc
 
 
