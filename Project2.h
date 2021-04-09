@@ -10,11 +10,11 @@
 //Pin configurations
 /**************************************************************************************************************/
 // Indices
-#define SMALL 0x0033f8
-#define LARGE 0x00789e
-#define FERROUS 0x00c038
-#define NON 0x00fe01
-#define OBJECT 0x013efd
+#define SMALL 0x0000e8
+#define LARGE 0x0033f8
+#define FERROUS 0x00789e
+#define NON 0x00c038
+#define OBJECT 0x00fe01
 #define DETECTED 0x016ebc
 #define DETERMINING 0x0187ce
 #define REFERENCE 0x01d928
@@ -31,11 +31,11 @@
 
 // Lengths
 
-#define SMALL_LEN 0x0044a6
+#define SMALL_LEN 0x00479a
 #define LARGE_LEN 0x00479a
-#define FERROUS_LEN 0x003dc9
-#define NON_LEN 0x0040fc
-#define OBJECT_LEN 0x002fbf
+#define FERROUS_LEN 0x00479a
+#define NON_LEN 0x003dc9
+#define OBJECT_LEN 0x0040fc
 #define DETECTED_LEN 0x001912
 #define DETERMINING_LEN 0x00515a
 #define REFERENCE_LEN 0x004347
